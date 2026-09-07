@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docker:
-    name: Docker Build & Push
+  deploy:
+    name: Deploy
 
     runs-on: ubuntu-latest
 

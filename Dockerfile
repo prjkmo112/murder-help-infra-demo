@@ -3,10 +3,9 @@ WORKDIR /workspace
 
 COPY gradlew build.gradle settings.gradle ./
 COPY gradle ./gradle
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
-
 COPY src ./src
-RUN ./gradlew bootJar --no-daemon -x test
+
+RUN chmod +x gradlew  && ./gradlew bootJar --no-daemon -x test
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
