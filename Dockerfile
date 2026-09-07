@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk AS builder
+FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jdk AS builder
 WORKDIR /workspace
 
 COPY gradlew build.gradle settings.gradle ./
@@ -11,9 +11,11 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 RUN useradd --create-home --shell /bin/bash app
-USER app
 
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
+USER app
+
 EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
