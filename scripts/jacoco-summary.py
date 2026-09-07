@@ -67,28 +67,38 @@ services.sort(
     key=lambda x: x["line"] if x["line"] is not None else 100
 )
 
-summary = os.environ["GITHUB_STEP_SUMMARY"]
+#########
 
-with open(summary, "a") as f:
-    f.write("# 📊 JaCoCo Coverage Report\n\n")
+lines = []
 
-    f.write("## Overall Coverage\n\n")
-    f.write("| Metric | Coverage |\n")
-    f.write("|---|---:|\n")
-    f.write(f"| Lines | **{badge(overall_line)}** |\n")
-    f.write(f"| Branches | **{badge(overall_branch)}** |\n")
+lines.append("# 📊 JaCoCo Coverage Report\n")
+lines.append("## Overall Coverage\n")
+lines.append("| Metric | Coverage |")
+lines.append("|---|---:|")
+lines.append(f"| Lines | **{badge(overall_line)}** |")
+lines.append(f"| Branches | **{badge(overall_branch)}** |\n")
 
-    f.write("\n## Service Coverage\n\n")
+lines.append("## Service Coverage\n")
 
-    if not services:
-        f.write("_Service classes not found._\n")
-    else:
-        f.write("| Service | Line | Branch |\n")
-        f.write("|---|---:|---:|\n")
+if not services:
+    lines.append("_Service classes not found._")
+else:
+    lines.append("| Service | Line | Branch |")
+    lines.append("|---|---:|---:|")
 
-        for service in services:
-            f.write(
-                f"| `{service['name']}` "
-                f"| {badge(service['line'])} "
-                f"| {badge(service['branch'])} |\n"
-            )
+    for service in services:
+        lines.append(
+            f"| `{service['name']}` "
+            f"| {badge(service['line'])} "
+            f"| {badge(service['branch'])} |"
+        )
+
+content = "\n".join(lines) + "\n"
+
+# GitHub Actions Summary
+with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+    f.write(content)
+
+# PR Comment 용 파일
+with open("jacoco-comment.md", "w") as f:
+    f.write(content)
