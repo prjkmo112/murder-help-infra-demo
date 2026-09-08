@@ -86,12 +86,51 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: 배포 대상 Environment 결정
+        id: env
+        shell: bash
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          if [ "$BRANCH" = "main" ]; then
+            echo "environment=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: EC2 인스턴스 ID 조회
+        id: ec2
+        shell: bash
+        env:
+          PROJECT: murder-help
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}
+        run: |
+          set -euo pipefail
+
+          INSTANCE_ID=$(
+            aws ec2 describe-instances \
+              --region "${{ vars.AWS_REGION }}" \
+              --filters \
+                "Name=tag:Project,Values=$PROJECT" \
+                "Name=tag:Environment,Values=$ENVIRONMENT" \
+                "Name=instance-state-name,Values=running" \
+              --query "Reservations[].Instances[].InstanceId" \
+              --output text
+          )
+
+          if [ -z "$INSTANCE_ID" ] || [ "$(echo "$INSTANCE_ID" | wc -w)" -ne 1 ]; then
+            echo "::error::Project=$PROJECT, Environment=$ENVIRONMENT 태그로 정확히 1개의 running 인스턴스를 찾지 못했습니다. (찾은 것: $INSTANCE_ID)"
+            exit 1
+          fi
+
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to EC2
         shell: bash
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
           CONTAINER_NAME: murder-help
+          INSTANCE_ID: ${{ steps.ec2.outputs.instance_id }}
         run: |
           set -euo pipefail
 
@@ -116,7 +155,7 @@ jobs:
           COMMAND_ID=$(
             aws ssm send-command \
               --region "${{ vars.AWS_REGION }}" \
-              --instance-ids "${{ vars.AWS_INSTANCE_ID }}" \
+              --instance-ids "$INSTANCE_ID" \
               --document-name "AWS-RunShellScript" \
               --comment "Deploy ${{ env.IMAGE_TAG }}" \
               --parameters file://ssm-parameters.json \
@@ -127,4 +166,4 @@ jobs:
 
           echo "SSM Command ID: ${COMMAND_ID}"
 
-          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "${{ vars.AWS_INSTANCE_ID }}"
+          aws ssm wait command-executed --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID"
