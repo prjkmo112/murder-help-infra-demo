@@ -1,6 +1,9 @@
-# /murder-help/prod/ 하위 AWS Parameter Store 값들은 배포 환경(ECS 등)에서
-# 아래와 동일한 이름의 OS 환경변수로 주입된다는 전제로 참조한다.
+# /murder-help/prod/ 하위 AWS Parameter Store 값들을 spring-cloud-aws 로 직접 조회해
+# 아래와 동일한 이름의 Spring 프로퍼티(환경변수 스타일 이름)로 주입한다.
+# EC2 인스턴스 역할에 ssm:GetParameter(s), ssm:GetParametersByPath 권한이 있어야 한다.
 spring:
+  config:
+    import: "aws-parameterstore:/murder-help/prod/"
   datasource:
     url: jdbc:mysql://${AWS_RDS_HOST}:${AWS_RDS_PORT}/murder_help
     username: ${AWS_RDS_USERNAME}
