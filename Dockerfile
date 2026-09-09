@@ -1,9 +1,24 @@
+FROM --platform=$BUILDPLATFORM node:24-alpine AS frontend
+WORKDIR /frontend
+
+RUN corepack enable && corepack prepare pnpm@10.34.3 --activate
+
+# 의존성 설치를 소스 복사보다 먼저 해야 프론트 소스만 바뀌었을 때
+# install 레이어가 캐시에서 재사용된다.
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY frontend ./
+RUN pnpm run build
+
 FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jdk AS builder
 WORKDIR /workspace
 
 COPY gradlew build.gradle settings.gradle ./
 COPY gradle ./gradle
 COPY src ./src
+
+COPY --from=frontend /frontend/dist ./src/main/resources/static
 
 RUN chmod +x gradlew  && ./gradlew bootJar --no-daemon -x test
 
