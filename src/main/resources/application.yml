@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: murder-help-infra-demo
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: true
+
+  cache:
+    type: redis
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  sql:
+    init:
+      mode: never
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+  cloud:
+    aws:
+      # 리전을 명시하지 않으면 spring-cloud-aws 가 기동 시점에 DefaultAwsRegionProviderChain 으로
+      # 리전을 찾다가 실패해 컨텍스트가 뜨지 않는다. (S3 / Parameter Store 공통)
+      region:
+        static: ${AWS_REGION:ap-northeast-2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+aws:
+  s3:
+    bucket: ${S3_BUCKET:murder-help-bucket}
+    prefix: ${S3_PREFIX:local}

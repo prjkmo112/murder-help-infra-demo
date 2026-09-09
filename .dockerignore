@@ -5,3 +5,8 @@ build
 .idea
 *.iml
 README.md
+
+# frontend 는 node 스테이지에서 새로 빌드하므로 로컬 산출물은 제외한다.
+# 단 frontend/.figma 는 vite.config.ts 가 site.json 을 import 하므로 제외하면 안 된다.
+frontend/node_modules
+frontend/dist
